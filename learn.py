@@ -261,9 +261,9 @@ def render_policy(env, env_name, algo, policy_path, coop=False, colab=False, see
     
         # SIDE VIEW — not behind robot
         p.resetDebugVisualizerCamera(
-            cameraDistance=1.3,   # less zoom
+            cameraDistance=1.2,   # less zoom
             cameraYaw=150,         # pure side view
-            cameraPitch=-35,      # more top-down
+            cameraPitch=-33,      # more top-down
         cameraTargetPosition=tool_pos)
 
 

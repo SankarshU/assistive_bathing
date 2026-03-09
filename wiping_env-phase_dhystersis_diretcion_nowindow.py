@@ -22,7 +22,7 @@ class WipingEnv(AssistiveEnv):
         self.distance_weight = 1.0
         self.action_weight = 0.01
         self.wiping_reward_weight = 5.0
-        self.task_success_threshold = 0.69
+        self.task_success_threshold = 0.6
 
                 # ---- reward shaping upgrades (paper-inspired) ----
         self.reach_switch_dist = 0.10     # meters; switch reach->wipe shaping
@@ -31,7 +31,7 @@ class WipingEnv(AssistiveEnv):
         self.contact_band_max = 12.0      # N
         self.force_weight = 0.02          # tune 0.01-0.05
         self.near_target_weight = 0.5     # tune 0.2-1.0
-        self.clear_radius = 0.030 #0.035         # curriculum: start >0.025, tighten later
+        self.clear_radius = 0.035         # curriculum: start >0.025, tighten later
 
         # continuity (optional later)
         self.prev_contact_pos = None
@@ -717,11 +717,6 @@ class WipingEnv(AssistiveEnv):
     
         # 8) Dense proxy reward: any contact near remaining targets
         reward_near_target = float(near_target_contact)
-        # Prefer contact / clears in the active directional wipe window
-        reward_window = 0.0
-        if self._wipe_mode and contact_latched:
-            reward_window += 0.5 * float(getattr(self, "_window_near_target_contact", 0))
-            reward_window += 0.25 * float(getattr(self, "_window_clears", 0))
     
         # 9) Force-band shaping (encourage safe sustained contact)
         if normal_force <= 1e-6:
@@ -744,15 +739,6 @@ class WipingEnv(AssistiveEnv):
             self.near_target_weight * reward_near_target +
             self.force_weight * reward_force +
             reward_sweep
-        )
-        reward = (
-            self.distance_weight * reward_distance +
-            self.action_weight * reward_action +
-            self.wiping_reward_weight * reward_clears +
-            self.near_target_weight * reward_near_target +
-            self.force_weight * reward_force +
-            reward_sweep +
-            reward_window
         )
     
         # ------------------------------------------------------------
@@ -787,11 +773,7 @@ class WipingEnv(AssistiveEnv):
             "pass_dir": float(self._pass_dir),
             "reward_sweep": float(reward_sweep),
             "post_clear_grace": int(self._post_clear_grace),
-
-            "window_near_target_contact": int(getattr(self, "_window_near_target_contact", 0)),
-            "window_hits": int(getattr(self, "_window_hits", 0)),
-            "window_clears": int(getattr(self, "_window_clears", 0)),
-                }
+        }
     
         done = bool(self.task_success >= (self.feasible_targets_count * self.task_success_threshold))
     
@@ -808,8 +790,6 @@ class WipingEnv(AssistiveEnv):
                 f"n_targets={n_t}  wipe_mode={int(self._wipe_mode)}  "
                 f"latched={int(contact_latched)}  steps_since_contact={steps_since_contact}  "
                 f"s={s_dbg:.3f}  dir={self._pass_dir:+.0f}  rsweep={reward_sweep:.3f}"
-                f"win_near={int(getattr(self, '_window_near_target_contact', 0))}  "
-                f"win_clr={int(getattr(self, '_window_clears', 0))}  "
             )
     
         return obs, reward, done, info
@@ -941,188 +921,6 @@ class WipingEnv(AssistiveEnv):
     
             clears = len(idxs)
             self.task_success += clears
-    
-        return (
-            clears,
-            (None if contact_pos is None else np.array(contact_pos)),
-            float(normal_force),
-            int(near_target_contact),
-        )
-
-    def get_new_contact_points(self):
-        """
-        Returns:
-          clears: int (#unique targets cleared this step)
-          contact_pos: np.array or None
-          normal_force: float
-          near_target_contact: int
-    
-        Added side effects (for Stage 2A shaping only):
-          self._window_near_target_contact
-          self._window_hits
-          self._window_clears
-        """
-        clears = 0
-        contact_pos = None
-        normal_force = 0.0
-        near_target_contact = 0
-    
-        # New: directional-window diagnostics/shaping signals
-        self._window_near_target_contact = 0
-        self._window_hits = 0
-        self._window_clears = 0
-    
-        # --- fetch contacts once ---
-        cps = self.bc.getContactPoints(
-            bodyA=self.tool,
-            bodyB=self.humanoid._humanoid,
-            physicsClientId=self.bc._client
-        )
-    
-        if not hasattr(self, "_dbg_contact_once"):
-            self._dbg_contact_once = True
-            print("RAW cps:", len(cps))
-            if len(cps) > 0:
-                c0 = cps[0]
-                print("RAW first:", "linkA=", c0[3], "linkB=", c0[4], "fn=", float(c0[9]))
-    
-        def _delete_indices(obj, idxs):
-            if obj is None:
-                return None
-            if isinstance(obj, list):
-                for i in idxs:
-                    del obj[i]
-                return obj
-            try:
-                return np.delete(obj, idxs, axis=0)
-            except Exception:
-                return np.delete(obj, idxs)
-    
-        def _len(obj):
-            if obj is None:
-                return 0
-            return len(obj)
-    
-        # ------------------------------------------------------------
-        # Build active directional window over current feasible targets
-        # ------------------------------------------------------------
-        window_mask = None
-        targets_s = None
-    
-        if hasattr(self, "feasible_targets_pos_world") and _len(self.feasible_targets_pos_world) > 0:
-            targets_world_full = np.asarray(self.feasible_targets_pos_world, dtype=np.float32)
-    
-            axis_cache = getattr(self, "_arm_axis_cache", None)
-            pass_dir = float(getattr(self, "_pass_dir", 1.0))
-            prev_s = getattr(self, "_prev_s", None)
-    
-            # Need valid axis and current s to define directional window
-            if axis_cache is not None and prev_s is not None:
-                center = axis_cache["center"]
-                axis = axis_cache["axis"]
-                s_min = axis_cache["s_min"]
-                span = axis_cache["span"]
-    
-                proj = (targets_world_full - center) @ axis
-                targets_s = (proj - s_min) / span
-                targets_s = np.clip(targets_s, 0.0, 1.0)
-    
-                win_half = float(getattr(self, "sweep_window_size", 0.12))
-    
-                if pass_dir > 0:
-                    lo, hi = prev_s, prev_s + win_half
-                else:
-                    lo, hi = prev_s - win_half, prev_s
-    
-                lo = max(0.0, lo)
-                hi = min(1.0, hi)
-    
-                window_mask = (targets_s >= lo) & (targets_s <= hi)
-    
-        # Early exit: no targets left
-        if (not hasattr(self, "feasible_targets_pos_world")) or (_len(self.feasible_targets_pos_world) == 0):
-            for c in cps:
-                linkA = c[3]
-                linkB = c[4]
-    
-                if linkA not in (0, 1):
-                    continue
-                if linkB < 0 or linkB not in self.human_right_arm:
-                    continue
-    
-                fn = float(c[9]) if len(c) > 9 else 0.0
-                normal_force += fn
-                contact_pos = np.asarray(c[6], dtype=np.float32)
-    
-            return 0, (None if contact_pos is None else np.array(contact_pos)), float(normal_force), 0
-    
-        targets_world = np.asarray(self.feasible_targets_pos_world, dtype=np.float32)
-        to_clear = set()
-        to_clear_in_window = set()
-    
-        min_clear_force = float(getattr(self, "min_clear_force", 0.0))
-    
-        for c in cps:
-            linkA = c[3]
-            linkB = c[4]
-    
-            if linkA not in (0, 1):
-                continue
-            if linkB < 0 or linkB not in self.human_right_arm:
-                continue
-    
-            posB = np.asarray(c[6], dtype=np.float32)
-            fn = float(c[9]) if len(c) > 9 else 0.0
-    
-            normal_force += fn
-            contact_pos = posB
-    
-            # distances from this contact point to all remaining targets
-            dists = np.linalg.norm(targets_world - posB[None, :], axis=1)
-    
-            if np.min(dists) < self.near_target_dist:
-                near_target_contact = 1
-    
-            # New: directional-window-aware contact signal
-            if window_mask is not None and np.any(window_mask):
-                window_dists = dists[window_mask]
-    
-                if len(window_dists) > 0 and np.min(window_dists) < self.near_target_dist:
-                    self._window_near_target_contact = 1
-    
-                self._window_hits += int(np.sum(window_dists < self.near_target_dist))
-    
-            # Old clear logic remains unchanged
-            if fn >= min_clear_force:
-                hit_idx = np.where(dists < self.clear_radius)[0]
-                for i in hit_idx.tolist():
-                    to_clear.add(int(i))
-    
-                    # New: record whether this clear happened in the active window
-                    if window_mask is not None and i < len(window_mask) and window_mask[i]:
-                        to_clear_in_window.add(int(i))
-    
-        # Apply clears (unchanged)
-        if to_clear:
-            idxs = sorted(to_clear, reverse=True)
-    
-            for i in idxs:
-                target_body = self.feasible_targets[i]
-                self.bc.resetBasePositionAndOrientation(
-                    target_body, [1000, 1000, 1000], [0, 0, 0, 1],
-                    physicsClientId=self.bc._client
-                )
-    
-            self.feasible_targets = _delete_indices(self.feasible_targets, idxs)
-            self.feasible_targets_pos_world = _delete_indices(self.feasible_targets_pos_world, idxs)
-            if hasattr(self, "feasible_targets_pos") and self.feasible_targets_pos is not None:
-                self.feasible_targets_pos = _delete_indices(self.feasible_targets_pos, idxs)
-    
-            clears = len(idxs)
-            self.task_success += clears
-    
-        # New: how many clears happened in the desired directional window
-        self._window_clears = len(to_clear_in_window)
     
         return (
             clears,
