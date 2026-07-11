@@ -1,0 +1,19 @@
+<?xml version="1.0" ?>
+<robot name="cube.urdf">
+  <link name="baseLink">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+	 	    <box size="0.2 0.2 0.3"/>
+      </geometry>
+       <material name="white">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+	 	    <box size="0.2 0.2 0.28"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>

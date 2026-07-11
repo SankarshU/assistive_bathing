@@ -1,0 +1,23 @@
+# Python 3.8.19  (conda env recommended; RLlib 1.13 pins the stack below)
+# Exact versions used to produce every result in results/ and paper/.
+#
+#   conda create -n learnbath python=3.8 -y && conda activate learnbath
+#   pip install -r requirements.txt
+#
+# NOTE: pybullet, numpy, scipy, matplotlib, pandas, Pillow were conda-installed in
+# the original env; the pinned versions below reproduce it under pip as well.
+
+ray[rllib]==1.13.0
+gym==0.15.3
+torch==1.12.1
+pybullet==3.2.5
+numpy==1.23.5
+scipy==1.10.1
+pandas==2.0.3
+matplotlib==3.7.3
+Pillow==9.4.0
+imageio==2.35.1
+dm-tree==0.1.8
+lz4==4.3.3
+protobuf==3.20.3
+tensorboardX==2.6.2.2

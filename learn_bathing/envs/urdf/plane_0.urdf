@@ -1,0 +1,14 @@
+<?xml version="0.0" ?>
+<robot name="plane">
+    <link name="planeLink">
+    <visual>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+		    <box size="100 100 0.1"/>
+        </geometry>
+        <material name="white">
+            <color rgba="0 0 0 1"/>
+        </material>
+    </visual>
+  </link>
+</robot>
