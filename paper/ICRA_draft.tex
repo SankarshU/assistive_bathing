@@ -281,18 +281,47 @@ Peak force & $\max_{t\in\mathcal{C}} f_t$ (worst case)\\
 
 \section{Results}
 \label{sec:results}
-Table~\ref{tab:main} is the flagship comparison: grand means over 4 regions $\times$ 3 seeds,
-with the best value per column in bold. The two CCP settings capture every column---Thorough
-wins the coverage metrics, Gentle wins the safety/engagement metrics---and both dominate the
-flat and scripted baselines. Fig.~\ref{fig:tradeoff} plots the same data as a
-safety$\leftrightarrow$coverage frontier: the comfort dial moves CCP along it while the
-baselines sit strictly inside.
+Table~\ref{tab:main} is the flagship comparison, broken out \emph{per arm region}: each cell is
+targets cleared with the in-band force fraction in parentheses. CCP @Thorough takes the best
+coverage and CCP @Gentle the best in-band force in most regions, and both dominate the flat and
+scripted baselines everywhere. Table~\ref{tab:grand} aggregates the same runs across five
+metrics grouped into coverage and safety axes---Thorough wins the coverage metrics, Gentle wins
+the safety ones. Fig.~\ref{fig:tradeoff} plots the trade-off as a frontier: the comfort dial
+moves CCP along it while the baselines sit strictly inside.
+
+\begin{table*}[t]
+\centering\small
+\caption{\textbf{Flagship comparison, per arm region} (3-seed means). Each cell is targets
+cleared out of 15 with the therapeutic-band ($2$--$12$\,N) in-band force fraction in
+parentheses. \best{Bold} = best cleared and best in-band per column. CCP's two care settings
+take the best cleared (Thorough) and best in-band (Gentle) in most regions; the flat and
+scripted baselines are dominated everywhere.}
+\label{tab:main}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{l ccccc}
+\toprule
+ & \multicolumn{5}{c}{\textbf{targets cleared / 15\ \ (in-band force fraction)}}\\
+\cmidrule(l){2-6}
+\textbf{Method} & \textbf{forearm back} & \textbf{forearm front} & \textbf{upper-arm back} & \textbf{upper-arm front} & \textbf{Mean}\\
+\midrule
+Comfort spec.                  & 6.25 (0.150) & 4.99 (0.218) & 6.75 (0.164) & 5.19 (0.159) & 5.80 (0.173)\\
+Contact-cnt spec.              & 6.72 (0.121) & 7.05 (0.256) & 6.80 (0.112) & 4.95 (0.128) & 6.38 (0.154)\\
+Student$\leftarrow$Comfort     & 6.15 (0.154) & 6.23 (0.282) & 6.74 (\best{0.172}) & \best{5.96} (\best{0.162}) & 6.27 (0.193)\\
+Student$\leftarrow$Contact-cnt & 6.42 (0.117) & \best{7.77} (0.256) & 6.82 (0.110) & 5.69 (0.128) & 6.68 (0.153)\\
+\textbf{CCP @Gentle}           & 6.35 (\best{0.168}) & 6.15 (\best{0.311}) & 6.62 (0.165) & 5.55 (0.146) & 6.17 (\best{0.198})\\
+\textbf{CCP @Thorough}         & \best{6.95} (0.121) & 7.65 (0.278) & \best{7.02} (0.106) & 5.56 (0.120) & \best{6.80} (0.156)\\
+\midrule
+Flat (multi-task)              & 5.00 (0.073) & 5.20 (0.059) & 6.43 (0.109) & 3.80 (0.058) & 5.11 (0.075)\\
+Scripted (non-RL)              & 6.27 (0.087) & 4.48 (0.050) & 4.28 (0.020) & 3.20 (0.002) & 4.56 (0.040)\\
+\bottomrule
+\end{tabular}
+\end{table*}
 
 \begin{table}[t]
 \centering\small
-\caption{Flagship comparison (grand mean, 4 regions $\times$ 3 seeds). \best{Bold}=best in
-column. CCP's two care settings jointly win every column; baselines are dominated.}
-\label{tab:main}
+\caption{Aggregate view (grand mean over all regions), grouped by axis. \best{Bold} = best per
+column: CCP @Thorough wins the coverage metrics, CCP @Gentle wins safety/engagement.}
+\label{tab:grand}
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{lccc cc}
 \toprule
@@ -313,20 +342,22 @@ Scripted (non-RL)        & 4.56 & 0.046 & 0.260 & 0.039 & 0.339\\
 \end{tabular}
 \end{table}
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=0.92\columnwidth]{fig_tradeoff.pdf}
-\caption{The safety$\leftrightarrow$coverage frontier. Each point is a method (grand mean).
-Flipping CCP's one care bit slides it from Thorough (best coverage) to Gentle (best in-band
-force) along the frontier; the flat and scripted baselines lie strictly inside.}
+\includegraphics[width=0.80\textwidth]{fig_tradeoff.pdf}
+\caption{The safety$\leftrightarrow$coverage frontier. Each point is a method (grand mean over
+4 regions $\times$ 3 seeds). Flipping CCP's one care bit slides it from Thorough (best
+coverage) to Gentle (best in-band force) along the frontier; the flat and scripted baselines
+lie strictly inside it.}
 \label{fig:tradeoff}
-\end{figure}
+\end{figure*}
 
 \subsection{A caregiver-selectable gentle$\leftrightarrow$thorough dial}
 \label{sec:dial}
 CCP spans the trade-off at deployment time. Averaged over 4 regions $\times$ 3 seeds: Thorough
 mode $6.80$ cleared / $0.156$ in-band; Gentle mode $6.17$ cleared / $0.198$ in-band, with the
-ordering consistent on all four regions (Table~\ref{tab:dial}). Because CCP is \emph{one}
+ordering consistent on all four regions (Table~\ref{tab:main}: Gentle is gentler in $4/4$
+regions, Thorough clears $\geq$ in $4/4$). Because CCP is \emph{one}
 network, flipping $\kappa$ is a perfectly paired comparison---same weights, seeds, regions;
 only the care bit differs. Switching to Gentle raises \best{in-band force fraction by $+34\%$}
 (better in $10/12$ region$\times$seed pairs, exact sign test $p{=}0.039$) at an $8\%$ coverage
@@ -334,25 +365,6 @@ cost ($3/12$, n.s.). On composite \emph{safe clears} (cleared$\times$in-band), t
 Comfort-distilled behavior leads by $+28\%$. The raw clear-count ordering is reversed
 (Thorough clears more): the reward design does not make wiping more \emph{productive}, it makes
 it \emph{safer}, and the dial hands that choice to the caregiver.
-
-\begin{table}[t]
-\centering\small
-\caption{The comfort dial per region (3-seed means). Gentle is gentler (higher in-band) in
-$4/4$ regions; Thorough clears $\geq$ in $4/4$.}
-\label{tab:dial}
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{lcc}
-\toprule
- & \textbf{Gentle} & \textbf{Thorough}\\
-\textbf{Region} & clr / in-band & clr / in-band\\
-\midrule
-forearm back    & 6.35 / \best{0.168} & \best{6.95} / 0.121\\
-forearm front   & 6.15 / \best{0.311} & \best{7.65} / 0.278\\
-upper-arm back  & 6.62 / \best{0.165} & \best{7.02} / 0.106\\
-upper-arm front & 5.55 / \best{0.146} & \best{5.56} / 0.120\\
-\bottomrule
-\end{tabular}
-\end{table}
 
 \subsection{CCP beats the flat multi-task baseline}
 \label{sec:flat}

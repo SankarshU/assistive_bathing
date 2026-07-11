@@ -96,8 +96,8 @@ for name, mk, hib in METRICS:
     print(f"  {name:12} -> {best}  ({col[best]:.3f})")
 
 # ---------- Figure A: coverage<->safety trade-off scatter (legend, no overlaps) ----------
-plt.rcParams.update({"font.size": 9, "font.family": "serif"})
-fig, ax = plt.subplots(figsize=(3.4, 3.0))
+plt.rcParams.update({"font.size": 10, "font.family": "serif"})
+fig, ax = plt.subplots(figsize=(6.2, 3.4))
 xs = {d: grand(p, s, "targets_cleared") for d, p, s in METHODS}
 ys = {d: grand(p, s, "in_band_force_fraction") for d, p, s in METHODS}
 # (display, marker, color, size) — CCP stars stand out; baselines squares; others circles
@@ -113,8 +113,8 @@ STYLE = {
 }
 for disp, pfx, seeded in METHODS:
     m, c, sz = STYLE[disp]
-    ax.scatter(xs[disp], ys[disp], s=sz, c=c, marker=m, zorder=3,
-               edgecolors="k", linewidths=0.5, label=disp)
+    ax.scatter(xs[disp], ys[disp], s=sz * 1.5, c=c, marker=m, zorder=3,
+               edgecolors="k", linewidths=0.6, label=disp)
 # dial arrow Thorough -> Gentle
 ax.annotate("", xy=(xs["CCP @Gentle"], ys["CCP @Gentle"]),
             xytext=(xs["CCP @Thorough"], ys["CCP @Thorough"]),
@@ -123,20 +123,22 @@ ax.text((xs["CCP @Gentle"]+xs["CCP @Thorough"])/2 - 0.02,
         (ys["CCP @Gentle"]+ys["CCP @Thorough"])/2 + 0.006,
         "comfort dial", color="#542788", fontsize=7.5, ha="center", style="italic")
 ax.set_xlabel("Targets cleared / 15  (coverage $\\rightarrow$)")
-ax.set_ylabel("In-band force fraction  (safety $\\rightarrow$)")
+ax.set_ylabel("In-band force fraction\n(safety $\\rightarrow$)")
 ax.grid(alpha=0.25)
 ax.set_ylim(0.0, 0.23)
-ax.legend(fontsize=6.0, ncol=2, loc="lower center", framealpha=0.92,
-          handletextpad=0.2, columnspacing=0.8, borderpad=0.3)
-ax.set_title("One policy, two behaviours: the comfort dial spans\nthe safety$\\leftrightarrow$coverage frontier; baselines are dominated",
-             fontsize=8.0, weight="bold")
+# legend OUTSIDE the axes (right) so it never crams the points
+ax.legend(fontsize=8.5, loc="center left", bbox_to_anchor=(1.02, 0.5),
+          framealpha=0.95, handletextpad=0.3, borderpad=0.5, title="Method")
+ax.set_title("One policy, two behaviours: the comfort dial spans the "
+             "safety$\\leftrightarrow$coverage frontier;\nbaselines are strictly dominated",
+             fontsize=9.5, weight="bold")
 fig.tight_layout()
 fig.savefig(os.path.join(PAPER, "fig_tradeoff.pdf"), bbox_inches="tight")
 print("\n[fig] paper/fig_tradeoff.pdf")
 
 # ---------- Figure B: grouped bar, targets cleared per region ----------
 key_methods = ["CCP @Thorough", "CCP @Gentle", "Contact-cnt spec.", "Flat", "Scripted"]
-fig2, ax2 = plt.subplots(figsize=(3.4, 2.4))
+fig2, ax2 = plt.subplots(figsize=(3.4, 2.7))
 x = np.arange(len(REG)); w = 0.8 / len(key_methods)
 pal = ["#762a83", "#1b7837", "#4d4d4d", "#b35806", "#b2182b"]
 for j, disp in enumerate(key_methods):
@@ -144,11 +146,13 @@ for j, disp in enumerate(key_methods):
     vals = per_region(pfx, seeded, "targets_cleared")
     ax2.bar(x + j * w - 0.4 + w / 2, vals, w, label=disp, color=pal[j])
 ax2.set_xticks(x)
-ax2.set_xticklabels(["fore\nback", "fore\nfront", "upper\nback", "upper\nfront"], fontsize=7)
+ax2.set_xticklabels(["fore\nback", "fore\nfront", "upper\nback", "upper\nfront"], fontsize=8)
 ax2.set_ylabel("Targets cleared / 15")
-ax2.legend(fontsize=6, ncol=2, loc="upper right", framealpha=0.9)
+ax2.set_ylim(0, 8.4)
+# legend ABOVE the plot (outside axes) so it never overlaps the bars
+ax2.legend(fontsize=7, ncol=3, loc="lower center", bbox_to_anchor=(0.5, 1.02),
+           frameon=False, handletextpad=0.4, columnspacing=1.0)
 ax2.grid(axis="y", alpha=0.25)
-ax2.set_title("Coverage per region", fontsize=8.5, weight="bold")
 fig2.tight_layout()
 fig2.savefig(os.path.join(PAPER, "fig_coverage.pdf"), bbox_inches="tight")
 print("[fig] paper/fig_coverage.pdf")
