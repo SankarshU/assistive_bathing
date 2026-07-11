@@ -20,7 +20,7 @@ the same thing:
 |---|---|---|
 | **Comfort reward** (`R_comf`)      | `ours`   | structured reward: sweep + window + end-of-pass + 2-D `(s,w)` coverage + force shaping |
 | **Contact-count reward** (`R_cc`)  | `yubik`  | baseline reward: `−d_arm − 0.01‖a‖² + 5·clears` |
-| **Dial student**                   | `style`  | one network distilled from all 8 teachers + a comfort-dial bit |
+| **CCP** (Context-Conditioned Policy) | `style` | one network distilled from all 8 teachers + a one-bit care level |
 | **Gentle** end (dial κ=0)          | `@Ours-bit`  / `AstyO` | Comfort behavior (safer, higher in-band force) |
 | **Thorough** end (dial κ=1)        | `@Yubik-bit` / `AstyY` | Contact-count behavior (more targets cleared) |
 | **Flat** baseline                  | `flat` / `Bflat` | single PPO on all regions, no conditioning |
@@ -44,7 +44,9 @@ distill.py                     collect | train | eval | render  (Algorithm 1)
 scripted_baseline.py           non-RL geometric sweep controller + BC collector
 metrics_report.py              episode_metrics() — the single source of all metrics
 analyze_final.py               emits every paper table (T1–T4, S1–S2) -> FINAL_RESULTS.md
-make_icra_figure.py            renders ICRA_matrix_figure.png from the summary CSV
+make_paper_figs.py             renders the paper's vector figures (fig_tradeoff/fig_coverage.pdf,
+                               fig_rollout.png) + prints the flagship-table numbers
+make_icra_figure.py            legacy methods x metrics overview PNG (superseded by the LaTeX tables)
 make_demos.py                  the three demo GIFs (dial / learned-vs-scripted / whole-arm)
 auto_loop.py                   autonomous, resumable teacher-training driver (CONFIGS)
 eval_ladder.py, aggregate_4region.py, reachability_probe.py, pose_feasibility.py,
@@ -92,8 +94,9 @@ number and the figure:
 
 ```bash
 python analyze_final.py --md results/FINAL_RESULTS.md   # T1–T4, S1–S2 -> FINAL_RESULTS.md
-python make_icra_figure.py                              # -> ICRA_matrix_figure.png
-cd paper && pdflatex ICRA_draft.tex && pdflatex ICRA_draft.tex   # -> ICRA_draft.pdf
+python make_paper_figs.py                               # -> paper/fig_{tradeoff,coverage}.pdf + numbers
+# paper/ uses the IEEEtran conference class (IEEEtran.cls is bundled in paper/)
+cd paper && pdflatex ICRA_draft.tex && pdflatex ICRA_draft.tex   # -> ICRA_draft.pdf (5 pp)
 ```
 
 ### B. Re-evaluate a distilled student (needs env, no training)

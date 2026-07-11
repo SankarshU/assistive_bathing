@@ -160,7 +160,7 @@ on demand), and **flat** (all 8 teachers pooled, no bit — an irreversible blen
 **Regions (4):** forearm back, forearm front, upper-arm back, upper-arm front.
 **Methods:** three reward classes — Comfort RL, Contact-count RL, and a non-RL scripted
 geometric sweep — each evaluated as *both* a per-region specialist and a distilled student;
-plus the **Dial student** (one network distilled from all eight RL specialists with a comfort
+plus the **Context-Conditioned Policy (CCP)** — one network distilled from all eight RL specialists with a comfort
 dial: **Gentle** end κ=0 = Comfort behavior / **Thorough** end κ=1 = Contact-count behavior)
 and a flat multi-task RL baseline (same Comfort reward, all regions, no conditioning). Comfort
 specialists use the structured reward with the (s, PC2) coverage term.
@@ -215,7 +215,7 @@ fraction and peak force only.
 | Scripted (non-RL)           | 6.27 (0.087) | 4.48 (0.050) | 4.28 (0.020) | 3.20 (0.002) | 4.56 (0.040) |
 
 ### 5.1 Headline: one distilled network with a caregiver-selectable gentle↔thorough dial
-The dial student — a single network conditioned on region and one comfort-dial bit — spans
+The CCP (Context-Conditioned Policy) — a single network conditioned on region and one comfort-dial bit — spans
 the coverage↔gentleness trade-off at deployment time. Averaged over 4 regions × 3 seeds:
 **Thorough mode 6.80 cleared / 0.156 in-band**, **Gentle mode 6.17 cleared / 0.198 in-band**.
 The ordering is consistent on **all four arm regions** (Gentle is gentler in 4/4; Thorough
@@ -310,5 +310,5 @@ what turns that choice into a runtime-switchable property of one deployable netw
 *Figure: `ICRA_matrix_figure.png` (method×metric comparison). Every number in §5 is emitted
 by `analyze_final.py` from `behavior_metrics_summary.csv`. Reproduction:
 `run_powerful_matrix4.sh` (teachers → distill → students → eval → figure, resumable).
-Paper-name ↔ code-label map: Comfort = `ours`, Contact-count = `yubik`, Dial = `style`,
+Paper-name ↔ code-label map: Comfort = `ours`, Contact-count = `yubik`, CCP (Context-Conditioned Policy) = `style`,
 Gentle = `@Ours-bit`, Thorough = `@Yubik-bit` (see repository README).*
